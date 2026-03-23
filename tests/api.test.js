@@ -1,23 +1,85 @@
 const request = require('supertest');
 const app = require('../index');
-describe('Electricity API Endpoints', () => {
-// Test Case 1: Total Usage
-    it('should return total electricity usage for all years', async () => {
-        const res = await request(app).get('/api/usages/totalyear');
-        expect(res.status).toBe(200);
+
+describe('Electricity API Comprehensive Test Suite', () => {
+
+    let sampleUsage;
+    let sampleUsers;
+
+    beforeAll(async () => {
+        const usageRes = await request(app).get('/api/usage-history/bangkok');
+        if (usageRes.body.length > 0) {
+            sampleUsage = usageRes.body[0];
+        }
+
+        const usersRes = await request(app).get('/api/users-history/bangkok');
+        if (usersRes.body.length > 0) {
+            sampleUsers = usersRes.body[0];
+        }
+    });
+
+    // 1
+    it('GET /api/usage/total-by-year', async () => {
+        const res = await request(app).get('/api/usage/total-by-year');
+
+        expect(res.statusCode).toBe(200);
         expect(typeof res.body).toBe('object');
     });
-// Test Case 2: Specific Province Usage
-    it('should return electricity usage for a specific province and year', async () => {
-        const res = await request(app).get('/api/usage/Alberta/2566');
-        expect(res.body.message).toBe('Data not found');
+
+    // 2
+    it('GET /api/users/total-by-year', async () => {
+        const res = await request(app).get('/api/users/total-by-year');
+
+        expect(res.statusCode).toBe(200);
+        expect(typeof res.body).toBe('object');
     });
 
-// Test Case 3: Verify Data Structure for Users
+    // 3
+    it('GET /api/usage/:province/:year', async () => {
+        if (!sampleUsage) return;
 
-    it('should return total electricity users for all years', async () => {
-        const res = await request(app).get('/api/pastusers/Bangkok');
-        expect(res.statusCode).toEqual(200);
+        const res = await request(app).get(
+            `/api/usage/${sampleUsage.province_name}/${sampleUsage.year}`
+        );
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.province_name).toBe(sampleUsage.province_name);
+    });
+
+    // 4
+    it('GET /api/users/:province/:year', async () => {
+        if (!sampleUsers) return;
+
+        const res = await request(app).get(
+            `/api/users/${sampleUsers.province_name}/${sampleUsers.year}`
+        );
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.province_name).toBe(sampleUsers.province_name);
+    });
+
+    // 5
+    it('GET /api/usage-history/:province', async () => {
+        const res = await request(app).get('/api/usage-history/bangkok');
+
+        expect(res.statusCode).toBe(200);
         expect(Array.isArray(res.body)).toBe(true);
     });
+
+    // 6
+    it('GET /api/users-history/:province', async () => {
+        const res = await request(app).get('/api/users-history/bangkok');
+
+        expect(res.statusCode).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    // 7
+    it('Error handling', async () => {
+        const res = await request(app).get('/api/usage/invalid/9999');
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.message).toBeDefined();
+    });
+
 });
